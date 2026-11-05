@@ -1,0 +1,424 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: farmlink
+  labels:
+    app.kubernetes.io/part-of: farmlink
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: farmlink-api
+  namespace: farmlink
+  annotations:
+    iam.gke.io/gcp-service-account: farmlink-api@PROJECT_ID.iam.gserviceaccount.com
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: farmlink-api-config
+  namespace: farmlink
+data:
+  APP_ENV: production
+  APP_DEBUG: "false"
+  APP_URL: https://api.example.com
+  APP_LOCALE: en
+  LOG_CHANNEL: stderr
+  LOG_LEVEL: warning
+  DB_CONNECTION: pgsql
+  DB_HOST: 127.0.0.1
+  DB_PORT: "5432"
+  DB_DATABASE: farmlink
+  DB_USERNAME: farmlink_app
+  DB_SSLMODE: prefer
+  CACHE_STORE: database
+  QUEUE_CONNECTION: database
+  SESSION_DRIVER: file
+  CORS_ALLOWED_ORIGINS: https://app.example.com
+  MPESA_ENVIRONMENT: production
+  MPESA_CALLBACK_URL: https://api.example.com/api/v1/webhooks/mpesa
+  PREMIUM_MONTHLY_MINOR: "0"
+  AD_CAMPAIGN_MONTHLY_MINOR: "0"
+  AD_ADMIN_IDS: ""
+  KYC_ADMIN_IDS: ""
+  COMMUNITY_ADMIN_IDS: ""
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: farmlink-api
+  namespace: farmlink
+  labels:
+    app: farmlink-api
+spec:
+  replicas: 3
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: farmlink-api
+  template:
+    metadata:
+      labels:
+        app: farmlink-api
+    spec:
+      serviceAccountName: farmlink-api
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 33
+        runAsGroup: 33
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: api
+          image: REGION-docker.pkg.dev/PROJECT_ID/farmlink/backend:RELEASE_SHA
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: farmlink-api-config
+          volumeMounts:
+            - name: secrets-store
+              mountPath: /var/run/secrets/farmlink
+              readOnly: true
+          resources:
+            requests:
+              cpu: 250m
+              memory: 384Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+          startupProbe:
+            httpGet:
+              path: /up
+              port: http
+            periodSeconds: 5
+            failureThreshold: 24
+          readinessProbe:
+            httpGet:
+              path: /up
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /up
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ["ALL"]
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.1
+          args:
+            - "--structured-logs"
+            - "--private-ip"
+            - "--port=5432"
+            - "PROJECT_ID:REGION:INSTANCE_NAME"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: farmlink-api-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: farmlink-api
+  namespace: farmlink
+spec:
+  type: ClusterIP
+  selector:
+    app: farmlink-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: farmlink-api
+  namespace: farmlink
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: farmlink-api
+  minReplicas: 3
+  maxReplicas: 30
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 65
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 75
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 25
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 60
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: farmlink-api
+  namespace: farmlink
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: farmlink-api
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: farmlink-api-backend
+  namespace: farmlink
+spec:
+  timeoutSec: 30
+  connectionDraining:
+    drainingTimeoutSec: 60
+  healthCheck:
+    checkIntervalSec: 15
+    timeoutSec: 5
+    healthyThreshold: 1
+    unhealthyThreshold: 3
+    type: HTTP
+    requestPath: /up
+    port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: farmlink-api-public
+  namespace: farmlink
+  annotations:
+    cloud.google.com/backend-config: '{"default":"farmlink-api-backend"}'
+    cloud.google.com/neg: '{"ingress":true}'
+spec:
+  type: ClusterIP
+  selector:
+    app: farmlink-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: farmlink-api-cert
+  namespace: farmlink
+spec:
+  domains:
+    - api.example.com
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: farmlink-api
+  namespace: farmlink
+  annotations:
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/ingress.global-static-ip-name: farmlink-api-ip
+    networking.gke.io/managed-certificates: farmlink-api-cert
+    kubernetes.io/ingress.allow-http: "false"
+spec:
+  rules:
+    - host: api.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: farmlink-api-public
+                port:
+                  number: 80
+---
+apiVersion: batch/v1
+kind: Deployment
+metadata:
+  name: farmlink-queue
+  namespace: farmlink
+  labels:
+    app: farmlink-queue
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: farmlink-queue
+  template:
+    metadata:
+      labels:
+        app: farmlink-queue
+    spec:
+      serviceAccountName: farmlink-api
+      terminationGracePeriodSeconds: 180
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 33
+        runAsGroup: 33
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: worker
+          image: REGION-docker.pkg.dev/PROJECT_ID/farmlink/backend:RELEASE_SHA
+          args: ["php", "artisan", "queue:work", "database", "--queue=payments,alerts,analytics,default", "--sleep=3", "--tries=5", "--timeout=120", "--max-time=3600"]
+          envFrom:
+            - configMapRef:
+                name: farmlink-api-config
+          volumeMounts:
+            - name: secrets-store
+              mountPath: /var/run/secrets/farmlink
+              readOnly: true
+          resources:
+            requests:
+              cpu: 250m
+              memory: 384Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.1
+          args:
+            - "--structured-logs"
+            - "--private-ip"
+            - "--port=5432"
+            - "PROJECT_ID:REGION:INSTANCE_NAME"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: farmlink-api-secrets
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: farmlink-scheduler
+  namespace: farmlink
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 120
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 240
+      template:
+        spec:
+          restartPolicy: Never
+          serviceAccountName: farmlink-api
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 33
+            runAsGroup: 33
+            seccompProfile:
+              type: RuntimeDefault
+          initContainers:
+            - name: cloud-sql-proxy
+              image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.1
+              restartPolicy: Always
+              args:
+                - "--structured-logs"
+                - "--private-ip"
+                - "--port=5432"
+                - "PROJECT_ID:REGION:INSTANCE_NAME"
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+              securityContext:
+                runAsNonRoot: true
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+          containers:
+            - name: scheduler
+              image: REGION-docker.pkg.dev/PROJECT_ID/farmlink/backend:RELEASE_SHA
+              args: ["php", "artisan", "schedule:run", "--no-interaction"]
+              envFrom:
+                - configMapRef:
+                    name: farmlink-api-config
+              volumeMounts:
+                - name: secrets-store
+                  mountPath: /var/run/secrets/farmlink
+                  readOnly: true
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 192Mi
+                limits:
+                  cpu: 500m
+                  memory: 384Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+          volumes:
+            - name: secrets-store
+              csi:
+                driver: secrets-store.csi.k8s.io
+                readOnly: true
+                volumeAttributes:
+                  secretProviderClass: farmlink-api-secrets
