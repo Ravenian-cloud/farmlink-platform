@@ -10,12 +10,25 @@ function accessTokenFrom(response) {
   return token;
 }
 
+function errorMessage(requestError) {
+  const errors = requestError.response?.data?.errors;
+  return (errors && Object.values(errors).flat()[0])
+    || requestError.response?.data?.error?.message
+    || requestError.response?.data?.message
+    || 'Authentication failed. Check your details and try again.';
+}
+
 export default function AuthPanel({ user, onAuthenticated, onLogout }) {
   const [mode, setMode] = useState('login');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState('farmer');
+  const [email, setEmail] = useState('');
+  const [county, setCounty] = useState('');
+  const [farmName, setFarmName] = useState('');
+  const [businessName, setBusinessName] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -27,17 +40,34 @@ export default function AuthPanel({ user, onAuthenticated, onLogout }) {
     setMessage('');
     try {
       if (mode === 'register') {
-        const registration = await api.post('/auth/register', { name: name.trim(), phone: phone.trim(), password, role });
-        const body = registration.data?.data || registration.data;
-        const token = body?.access_token || body?.token;
-        if (typeof token !== 'string' || token.length === 0) {
-          setMode('login');
-          setMessage('Account created. Sign in with your phone number and password.');
-          return;
-        }
-        window.sessionStorage.setItem('farmlink_access_token', token);
+        const profile = {
+          county: county.trim() || undefined,
+          ...(role === 'farmer' ? { farm_name: farmName.trim() || undefined } : {}),
+          ...(role === 'supplier' ? { business_name: businessName.trim() || undefined } : {}),
+        };
+        const registration = await api.post('/auth/register', {
+          name: name.trim(),
+          phone: phone.trim(),
+          email: email.trim() || undefined,
+          password,
+          role,
+          profile,
+        });
+        setMode('login');
+        setName('');
+        setPhone('');
+        setRole('farmer');
+        setEmail('');
+        setCounty('');
+        setFarmName('');
+        setBusinessName('');
+        setPassword('');
+        setShowPassword(false);
+        setMessage('Your account was created. Sign in with your phone number or email and password.');
+        return;
       } else {
-        const response = await api.post('/auth/login', { login: phone.trim(), password });
+        const loginValue = phone.trim();
+        const response = await api.post('/auth/login', { login: loginValue, password });
         window.sessionStorage.setItem('farmlink_access_token', accessTokenFrom(response));
       }
 
@@ -50,9 +80,7 @@ export default function AuthPanel({ user, onAuthenticated, onLogout }) {
         setError(requestError.message);
       } else {
         window.sessionStorage.removeItem('farmlink_access_token');
-        setError(requestError.response?.data?.error?.message
-          || requestError.response?.data?.message
-          || 'Authentication failed. Check your details and try again.');
+        setError(errorMessage(requestError));
       }
     } finally {
       setBusy(false);
@@ -61,62 +89,100 @@ export default function AuthPanel({ user, onAuthenticated, onLogout }) {
 
   if (user) {
     return (
-      <section aria-label="Account">
-        <p>Signed in as {user.name} ({user.role})</p>
-        <button type="button" onClick={onLogout}>Sign out</button>
-      </section>
+      <main className="account-page">
+        <section className="account-card" aria-label="Account">
+          <span className="auth-step">YOUR FARMLINK ACCOUNT</span>
+          <h1>You’re signed in.</h1>
+          <p>Signed in as <strong>{user.name}</strong> ({user.role}).</p>
+          <p>Account verification: <strong>{user.kyc_status || 'pending'}</strong></p>
+          <button type="button" onClick={onLogout}>Sign out</button>
+        </section>
+      </main>
     );
   }
 
+  const registering = mode === 'register';
+
   return (
-    <section aria-labelledby="account-title">
-      <h2 id="account-title">{mode === 'login' ? 'Sign in' : 'Create your FarmLink account'}</h2>
-      {error && <p role="alert">{error}</p>}
-      {message && <p role="status">{message}</p>}
-      <form onSubmit={submit}>
-        {mode === 'register' && (
-          <>
-            <label>
-              Name
-              <input autoComplete="name" required maxLength="160" value={name} onChange={(event) => setName(event.target.value)} />
+    <main className="auth-page" aria-labelledby="account-title">
+      <section className="auth-intro">
+        <span className="auth-eyebrow">GROW WITH YOUR COMMUNITY</span>
+        <h1>{registering ? 'Make your next move.' : 'Welcome back.'}</h1>
+        <p>{registering
+          ? 'Join local farmers, buyers, and suppliers building better markets together.'
+          : 'Sign in to manage listings, offers, and orders in one place.'}</p>
+        <div className="auth-points"><span>Local marketplace</span><span>Direct negotiation</span><span>Built for growers</span></div>
+      </section>
+
+      <section className="auth-card">
+        <span className="auth-step">{registering ? 'GET STARTED · FREE ACCOUNT' : 'YOUR FARMLINK ACCOUNT'}</span>
+        <h2 id="account-title">{registering ? 'Create your account' : 'Sign in'}</h2>
+        <p className="auth-subtitle">{registering ? 'A few details to get your account ready.' : 'Enter your phone number or email and password.'}</p>
+        {error && <p className="auth-message error-message" role="alert">{error}</p>}
+        {message && <p className="auth-message success-message" role="status">{message}</p>}
+
+        <form onSubmit={submit}>
+          {registering && <>
+            <label>Full name
+              <input autoComplete="name" required maxLength="160" value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Amina Wanjiku" />
             </label>
-            <label>
-              Account type
+            <label>I am joining as a
               <select value={role} onChange={(event) => setRole(event.target.value)}>
                 <option value="farmer">Farmer</option>
                 <option value="buyer">Buyer</option>
-                <option value="supplier">Supplier</option>
+                <option value="supplier">Agricultural supplier</option>
               </select>
             </label>
-          </>
-        )}
-        <label>
-          Phone
-          <input type="tel" autoComplete="tel" required maxLength="32" value={phone} onChange={(event) => setPhone(event.target.value)} />
-        </label>
-        <label>
-          Password
-          <input
-            type="password"
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            required
-            minLength={mode === 'register' ? 12 : undefined}
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </label>
-        <button type="submit" disabled={busy}>{busy ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}</button>
-      </form>
-      <button
-        type="button"
-        onClick={() => {
-          setError('');
-          setMessage('');
-          setMode(mode === 'login' ? 'register' : 'login');
-        }}
-      >
-        {mode === 'login' ? 'Create an account' : 'I already have an account'}
-      </button>
-    </section>
+            {role === 'farmer' && <label><span className="field-label-row"><span>Farm name</span><span className="optional-label">Optional</span></span>
+              <input autoComplete="organization" maxLength="160" value={farmName} onChange={(event) => setFarmName(event.target.value)} placeholder="Your farm or cooperative" />
+            </label>}
+            {role === 'supplier' && <label><span className="field-label-row"><span>Business name</span><span className="optional-label">Optional</span></span>
+              <input autoComplete="organization" maxLength="160" value={businessName} onChange={(event) => setBusinessName(event.target.value)} placeholder="Your business name" />
+            </label>}
+            <label><span className="field-label-row"><span>County</span><span className="optional-label">Optional</span></span>
+              <input autoComplete="address-level1" maxLength="100" value={county} onChange={(event) => setCounty(event.target.value)} placeholder="e.g. Nakuru" />
+            </label>
+          </>}
+
+          <label>{registering ? 'Phone number' : 'Phone number or email'}
+            <input
+              type={registering ? 'tel' : 'text'}
+              autoComplete={registering ? 'tel' : 'username'}
+              required
+              maxLength={registering ? 32 : 254}
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              placeholder={registering ? '+254 7XX XXX XXX' : 'Phone number or email'}
+            />
+          </label>
+          {registering && <label><span className="field-label-row"><span>Email address</span><span className="optional-label">Optional</span></span>
+            <input type="email" autoComplete="email" maxLength="254" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" />
+          </label>}
+          <label>Password
+            <input
+              type={showPassword ? 'text' : 'password'}
+              autoComplete={registering ? 'new-password' : 'current-password'}
+              required minLength={registering ? 12 : undefined}
+              value={password} onChange={(event) => setPassword(event.target.value)}
+              aria-describedby={registering ? 'password-hint' : undefined}
+            />
+            {registering && <small id="password-hint" className="field-hint">Use at least 12 characters.</small>}
+          </label>
+          <label className="show-password"><input type="checkbox" checked={showPassword} onChange={(event) => setShowPassword(event.target.checked)} /> Show password</label>
+          <button className="auth-submit" type="submit" disabled={busy}>
+            {busy ? 'Please wait…' : registering ? 'Create account' : 'Sign in'}
+          </button>
+        </form>
+
+        <p className="auth-switch">
+          {registering ? 'Already have an account?' : 'New to FarmLink?'}{' '}
+          <button className="text-button" type="button" disabled={busy} onClick={() => {
+            setError('');
+            setMessage('');
+            setMode(registering ? 'login' : 'register');
+          }}>{registering ? 'Sign in' : 'Create an account'}</button>
+        </p>
+      </section>
+    </main>
   );
 }

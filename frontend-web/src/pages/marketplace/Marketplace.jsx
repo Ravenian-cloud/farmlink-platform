@@ -44,7 +44,7 @@ export default function Marketplace({ user }) {
     try {
       await api.post(`/products/${selected.id}/bids`, {
         quantity: Number(quantity),
-        unit_price_minor: Number(price),
+        unit_price_minor: Math.round(Number(price) * 100),
         message: message.trim() || undefined,
       }, {
         headers: { 'Idempotency-Key': idempotencyKey },
@@ -81,7 +81,7 @@ export default function Marketplace({ user }) {
           <article key={product.id}>
             <h2>{product.name}</h2>
             <p>{category === 'produce' ? product.crop : product.input_type} {product.brand ? `· ${product.brand}` : ''}</p>
-            <p>{product.price_minor} {product.currency} minor units / {product.unit}</p>
+            <p className="listing-price">{new Intl.NumberFormat(undefined, { style: 'currency', currency: product.currency || 'KES' }).format(Number(product.price_minor) / 100)} <span>per {product.unit}</span></p>
             <p>{product.quantity_available} {product.unit} available · {product.county || 'Location not specified'}</p>
             {user?.role === 'buyer' && (
               <button
@@ -115,11 +115,11 @@ export default function Marketplace({ user }) {
               />
             </label>
             <label>
-              Your unit price (minor units, {selected.currency})
+              Your unit price ({selected.currency})
               <input
                 type="number"
                 min="1"
-                step="1"
+                step="0.01"
                 required
                 value={price}
                 onChange={(event) => setPrice(event.target.value)}

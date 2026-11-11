@@ -43,7 +43,7 @@ function ProductForm({ content, onCreated }) {
     description: '',
     quantity_available: '',
     unit: 'kg',
-    price_minor: '',
+    price_kes: '',
     county: '',
   });
   const [error, setError] = useState('');
@@ -62,7 +62,7 @@ function ProductForm({ content, onCreated }) {
         description: values.description.trim(),
         quantity_available: Number(values.quantity_available),
         unit: values.unit.trim(),
-        price_minor: Number(values.price_minor),
+        price_minor: Math.round(Number(values.price_kes) * 100),
         currency: 'KES',
         county: values.county.trim() || undefined,
       });
@@ -73,7 +73,7 @@ function ProductForm({ content, onCreated }) {
         description: '',
         quantity_available: '',
         unit: 'kg',
-        price_minor: '',
+        price_kes: '',
         county: '',
       });
       onCreated();
@@ -115,7 +115,7 @@ function ProductForm({ content, onCreated }) {
       </label>
       <label>
         Price per unit (KES minor units)
-        <input type="number" min="1" step="1" required value={values.price_minor} onChange={(event) => setValues({ ...values, price_minor: event.target.value })} />
+        <input type="number" min="0.01" step="0.01" required value={values.price_kes} onChange={(event) => setValues({ ...values, price_kes: event.target.value })} />
       </label>
       <label>
         County (optional)
@@ -129,7 +129,7 @@ function ProductForm({ content, onCreated }) {
 
 function BidCard({ bid, user, refresh, setPageError }) {
   const [quantity, setQuantity] = useState(bid.current_offer?.quantity || '');
-  const [price, setPrice] = useState(bid.current_offer?.unit_price_minor || '');
+  const [price, setPrice] = useState(bid.current_offer?.unit_price_minor ? bid.current_offer.unit_price_minor / 100 : '');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const isSeller = bid.seller_id === user.id;
@@ -177,15 +177,15 @@ function BidCard({ bid, user, refresh, setPageError }) {
         <>
           {isSeller && <button type="button" disabled={busy} onClick={() => runAction('accept')}>Accept offer</button>}
           {isSeller && <button type="button" disabled={busy} onClick={() => runAction('reject')}>Reject offer</button>}
-          <form onSubmit={(event) => { event.preventDefault(); runAction('counter', { quantity: Number(quantity), unit_price_minor: Number(price), message: message.trim() || undefined }); }}>
+          <form onSubmit={(event) => { event.preventDefault(); runAction('counter', { quantity: Number(quantity), unit_price_minor: Math.round(Number(price) * 100), message: message.trim() || undefined }); }}>
             <h4>Counter-offer</h4>
             <label>
               Quantity
               <input type="number" min="0.001" step="0.001" required value={quantity} onChange={(event) => setQuantity(event.target.value)} />
             </label>
             <label>
-              Unit price (KES minor units)
-              <input type="number" min="1" step="1" required value={price} onChange={(event) => setPrice(event.target.value)} />
+              Unit price (KES)
+              <input type="number" min="0.01" step="0.01" required value={price} onChange={(event) => setPrice(event.target.value)} />
             </label>
             <label>
               Message (optional)

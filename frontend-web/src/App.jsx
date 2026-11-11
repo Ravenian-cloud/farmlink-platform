@@ -47,22 +47,29 @@ export default function App() {
   }
 
   return (
-    <>
-      <header>
+    <div className="app-shell">
+      <header className="site-header">
+        <a className="brand" href="#marketplace" onClick={(event) => { event.preventDefault(); setPage('marketplace'); }} aria-label="FarmLink home">
+          <span className="brand-mark" aria-hidden="true">F</span>
+          <span>FarmLink<small>Markets that grow together</small></span>
+        </a>
         <nav aria-label="Main navigation">
-          <button type="button" onClick={() => setPage('marketplace')}>Marketplace</button>
-          <button type="button" onClick={() => setPage('dashboard')}>Dashboard</button>
-          <button type="button" onClick={() => setPage('feedback')}>Pilot feedback</button>
-          <button type="button" onClick={() => setPage('community')}>Knowledge & forum</button>
-          <button type="button" onClick={() => setPage('impact')}>SDG impact</button>
-          {user && <button type="button" onClick={() => setPage('community-admin')}>Community admin</button>}
+          <button className={page === 'marketplace' ? 'active' : ''} type="button" onClick={() => setPage('marketplace')}>Marketplace</button>
+          <button className={page === 'dashboard' ? 'active' : ''} type="button" onClick={() => setPage('dashboard')}>Dashboard</button>
+          <button className={page === 'community' ? 'active' : ''} type="button" onClick={() => setPage('community')}>Community</button>
+          <button className={page === 'impact' ? 'active' : ''} type="button" onClick={() => setPage('impact')}>Impact</button>
+          <button className={page === 'feedback' ? 'active' : ''} type="button" onClick={() => setPage('feedback')}>Feedback</button>
+          {user && <button className={page === 'community-admin' ? 'active' : ''} type="button" onClick={() => setPage('community-admin')}>Community admin</button>}
           {user?.role === 'supplier' && (
-            <button type="button" onClick={() => setPage('ads')}>Advertising</button>
+            <button className={page === 'ads' ? 'active' : ''} type="button" onClick={() => setPage('ads')}>Advertising</button>
           )}
-          <button type="button" onClick={() => setPage('account')}>Account</button>
+          <button className={`account-link ${page === 'account' ? 'active' : ''}`} type="button" onClick={() => setPage('account')}>
+            {user ? user.name : 'Sign in'}
+          </button>
         </nav>
       </header>
       {renderPage()}
-    </>
+      <footer className="site-footer"><span>FarmLink</span><span>Connecting growers, buyers, and suppliers.</span></footer>
+    </div>
   );
 }
