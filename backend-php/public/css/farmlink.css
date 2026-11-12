@@ -35,6 +35,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .site-header nav { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 .site-header nav button { border: 0; background: transparent; color: #536458; border-radius: 999px; padding: 9px 12px; font-size: 13px; font-weight: 600; }
 .site-header nav button:hover, .site-header nav button.active { background: #edf4e8; color: var(--green-dark); }
+.site-header nav a { border-radius: 999px; padding: 9px 12px; color: #536458; text-decoration: none; font-size: 13px; font-weight: 600; }
+.site-header nav a:hover, .site-header nav a.active { background: #edf4e8; color: var(--green-dark); }
 .site-header nav .account-link { margin-left: 8px; border: 1px solid #cbdac8; color: var(--green); }
 
 main { width: min(100% - 40px, 1120px); margin: 38px auto 64px; flex: 1; }
@@ -54,6 +56,7 @@ main small { color: var(--muted); }
 main form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px 18px; margin: 16px 0; }
 main form h2, main form h3, main form h4, main form > p, main form > button, main form [role='alert'], main form [role='status'] { grid-column: 1 / -1; }
 main label { display: grid; align-content: start; gap: 7px; color: #405348; font-size: 13px; font-weight: 600; }
+main [hidden] { display: none; }
 main input:not([type='checkbox']), main select, main textarea {
   width: 100%; border: 1px solid #d4dfd2; border-radius: 9px; padding: 11px 12px; background: #fff; color: #203127;
 }
@@ -72,6 +75,8 @@ main [role='status'] { color: #496b36; }
 main [role='dialog'] { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; overflow: auto; padding: 24px; background: rgb(18 33 23 / 55%); }
 main [role='dialog'] > form { width: min(100%, 620px); max-height: calc(100vh - 48px); overflow: auto; }
 main ul { padding-left: 22px; }
+.pre-wrap { white-space: pre-wrap; }
+.nested-reply { margin-inline-start: 1.5rem; }
 main section[aria-label='Input listings'] { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
 main section[aria-label='Input listings'] article { margin: 0; }
 .listing-price { color: var(--green-dark); font-size: 20px; font-weight: 800; }

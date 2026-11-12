@@ -2,13 +2,13 @@
 
 The Phase 2 files are starter implementations. Install the required runtimes and configure secrets locally before running them. Never commit `.env` or production credentials.
 
-## Backend: Laravel and PostgreSQL
+## Backend and PHP web frontend
 
-Requirements: PHP 8.2+, Composer, PostgreSQL, and PHP extensions `pdo_pgsql`, `openssl`, `mbstring`, `tokenizer`, `xml`, `ctype`, `fileinfo`, and `json`.
+Requirements: PHP 8.2+, Composer, MySQL or PostgreSQL, and PHP extensions for the selected database driver plus `openssl`, `mbstring`, `tokenizer`, `xml`, `ctype`, `fileinfo`, and `json`.
 
-1. In `C:\xampp\php\php.ini`, enable `extension=pdo_pgsql` (and `extension=pgsql` if needed), then restart Apache/CLI processes. Verify with `C:\xampp\php\php.exe -m`.
+1. Enable the PDO extension for your database in `C:\xampp\php\php.ini` (for MySQL, `pdo_mysql`; for PostgreSQL, `pdo_pgsql`), then restart Apache/CLI processes. Verify with `C:\xampp\php\php.exe -m`.
 2. From `backend-php`, install Composer dependencies. Copy `.env.example` to `.env` only if a local `.env` does not already exist; preserve existing local configuration.
-3. Configure PostgreSQL database credentials and generate the Laravel key:
+3. Configure the database credentials and generate the Laravel key:
 
    ```powershell
    C:\xampp\php\php.exe artisan key:generate
@@ -16,22 +16,18 @@ Requirements: PHP 8.2+, Composer, PostgreSQL, and PHP extensions `pdo_pgsql`, `o
 
 4. Generate a separate, random JWT signing secret and set it as `JWT_SECRET` in `.env`. Use at least 32 cryptographically random bytes; do not reuse `APP_KEY`.
 5. Configure M-Pesa **sandbox** credentials and an HTTPS callback URL. The callback must be reachable by Safaricom; `localhost` alone will not receive provider callbacks.
-6. Run migrations and start the API:
+6. Run migrations and start the web application and API:
 
    ```powershell
    C:\xampp\php\php.exe artisan migrate
    C:\xampp\php\php.exe artisan serve --host=0.0.0.0
    ```
 
-   The local API base is `http://127.0.0.1:8000/api/v1`. Enable CORS for the specific local frontend origin in `CORS_ALLOWED_ORIGINS`.
+   The PHP-rendered web interface is served from the same Laravel application at `http://127.0.0.1:8000`; its API base is `/api/v1`. The web UI uses Blade templates, CSS, and vanilla JavaScript, so Node.js and Vite are not required to run it.
+
+The Laravel migrations define the schema expected by this application. They are not interchangeable with the separate integer-ID SQL schema described in the database proposal.
 
 The database escrow fields are simulated state only. Daraja STK Push does not provide conditional escrow custody or payout. Do not use production funds until a regulated custody/escrow arrangement and payout integration are designed, reviewed and tested.
-
-## Web frontend
-
-Requirements: Node.js and npm.
-
-From `frontend-web`, run `npm install`, set `VITE_API_BASE_URL` to the backend `/api/v1` base if it differs from the default, then run `npm run dev`. The starter UI expects a JWT in `sessionStorage` under `farmlink_access_token`; a login UI/token lifecycle is not included yet.
 
 ## Flutter mobile
 

@@ -26,16 +26,16 @@ The offline sync unit test uses an in-memory SQLite database and mocked HTTP/con
 
 Run the device integration test with `flutter drive --driver=test_driver/integration_test.dart --target=integration_test/offline_sync_integration_test.dart` on representative Android devices to validate storage behavior and device/API reachability. Network state in this test is injected; verify real connectivity transitions separately on pilot devices.
 
-## Web checks
+## PHP web checks
 
-From `frontend-web`:
+From `backend-php`, run the Laravel test suite and serve the application:
 
 ```powershell
-npm install
-npm run build
+composer test
+php artisan serve
 ```
 
-Manually pilot the feedback form with bug, negotiation, and recommendation categories; verify server validation, duplicate-submit handling, mobile layout, and accessible keyboard/screen-reader labels. Add a JavaScript component test runner before relying on automated UI regression tests.
+The web UI is served by Laravel Blade templates and vanilla JavaScript. Manually pilot the marketplace, account registration/sign-in, negotiation, feedback categories, community/forum, impact reporting, and supplier advertising flows; verify server validation, duplicate-submit handling, mobile layout, and accessible keyboard/screen-reader labels.
 
 ## Weather/alert pilot safety
 
