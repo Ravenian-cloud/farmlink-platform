@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('phone', 32)->unique();
             $table->string('email', 254)->nullable()->unique();
             $table->string('password');
-            $table->string('role', 16);
+            $table->string('role', 24);
             $table->string('kyc_status', 16)->default('pending');
             $table->string('locale', 12)->default('en');
             $table->timestampTz('phone_verified_at')->nullable();
@@ -25,7 +25,7 @@ return new class extends Migration
         });
 
         if (DB::getDriverName() === 'pgsql') {
-            DB::statement("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('farmer', 'buyer', 'supplier'))");
+            DB::statement("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('farmer', 'buyer', 'supplier', 'transport_provider'))");
             DB::statement("ALTER TABLE users ADD CONSTRAINT users_kyc_status_check CHECK (kyc_status IN ('pending', 'verified', 'rejected'))");
         }
 
