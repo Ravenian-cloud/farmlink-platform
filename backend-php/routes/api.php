@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AdminAccountController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AdCampaignController;
 use App\Http\Controllers\BidController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WeatherWebhookController;
+use App\Http\Controllers\WeatherController;
 use App\Http\Middleware\AuthenticatePolicyPartner;
 use App\Http\Middleware\AuthenticateJwt;
 use App\Http\Middleware\IdempotencyGuard;
@@ -48,6 +50,7 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/{product}', [ProductController::class, 'show']);
     Route::get('/analytics/market', [AnalyticsController::class, 'index'])->middleware('throttle:60,1');
+    Route::get('/weather/current', [WeatherController::class, 'current'])->middleware('throttle:10,1');
 
     Route::middleware(AuthenticateJwt::class)->group(function (): void {
         Route::get('/me', [AuthController::class, 'me']);
@@ -57,9 +60,15 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('/admin/kyc/users/{userId}/review', [KycReviewController::class, 'review'])
             ->middleware([RequireKycAdministrator::class, 'throttle:30,1']);
         Route::get('/community/admin-access', [CommunityController::class, 'adminAccess']);
+        Route::patch('/admin/password', [AdminAccountController::class, 'changePassword'])
+            ->middleware([RequireCommunityAdministrator::class, 'throttle:5,1']);
         Route::get('/admin/community/articles', [CommunityController::class, 'adminArticles'])
             ->middleware(RequireCommunityAdministrator::class);
         Route::post('/admin/community/articles', [CommunityController::class, 'storeArticle'])
+            ->middleware(RequireCommunityAdministrator::class);
+        Route::get('/admin/deliveries/assignments', [LogisticsController::class, 'adminAssignments'])
+            ->middleware(RequireCommunityAdministrator::class);
+        Route::patch('/admin/deliveries/{delivery}/assignment', [LogisticsController::class, 'adminAssignProvider'])
             ->middleware(RequireCommunityAdministrator::class);
         Route::patch('/admin/community/articles/{article}', [CommunityController::class, 'updateArticle'])
             ->middleware(RequireCommunityAdministrator::class);

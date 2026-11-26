@@ -11,12 +11,26 @@
       @foreach(['marketplace'=>'Marketplace','dashboard'=>'Dashboard','community'=>'Community','impact'=>'Impact','feedback'=>'Feedback','account'=>'Sign in'] as $route=>$label)
         <a class="{{ $page === $route ? 'active' : '' }}" href="/{{ $route }}">{{ $label }}</a>
       @endforeach
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to dark mode">Dark mode</button>
+      <button class="logout-button" id="logout-link" type="button" hidden>Log out</button>
       <a id="admin-link" href="/community-admin" hidden>Community admin</a><a id="ads-link" href="/ads" hidden>Advertising</a>
     </nav>
   </header>
   <main id="app-main" data-page="{{ $page }}">
     @if($page === 'marketplace')
-      <h1>FarmLink marketplace</h1><p>Find local produce and agricultural inputs, then connect directly with the people who grow and supply them.</p>
+      <section class="marketplace-hero" aria-labelledby="marketplace-title">
+        <div class="marketplace-hero-copy">
+          <span class="auth-eyebrow">FRESH FROM YOUR COMMUNITY</span>
+          <h1 id="marketplace-title">Good food starts close to home.</h1>
+          <p>Find local produce and agricultural inputs, then connect directly with the people who grow and supply them.</p>
+        </div>
+        <img src="/images/farm-market.svg" alt="Illustration of a green farm landscape with a basket of fresh produce" width="640" height="420">
+      </section>
+      <section id="market-weather" class="weather-panel" aria-label="Local weather analysis">
+        <div class="weather-heading"><div><span class="auth-eyebrow">LOCAL CONDITIONS</span><h2>Weather near you</h2></div><button type="button" data-weather-locate>Use my location</button></div>
+        <p class="weather-location-note">Allow location access to view current conditions, a three-day outlook, and farm-focused suggestions. Your coordinates are used for this request and are not saved to your profile.</p>
+        <p data-weather-status role="status" aria-live="polite"></p><div data-weather-content></div>
+      </section>
       <nav aria-label="Marketplace categories"><button data-category="produce" aria-pressed="true">Produce</button><button data-category="input" aria-pressed="false">Agricultural inputs</button></nav>
       <p id="notice" role="status"></p><section id="listing-grid" aria-label="Listings"><p>Loading listings…</p></section>
     @elseif($page === 'account')
@@ -31,10 +45,21 @@
     @elseif($page === 'impact')
       <h1>Farmer impact</h1><p>Track the outcomes and impact of FarmLink participation.</p><p id="notice" role="status"></p><div id="impact-content">Sign in to view impact reports.</div>
     @elseif($page === 'community-admin')
-      <h1>Community administration</h1><p id="notice" role="status"></p><div id="admin-content">Checking administrator access…</div>
+      <h1>Admin dashboard</h1><p id="notice" role="status"></p><div id="admin-content">Checking administrator access…</div>
+    @elseif($page === 'admin-password')
+      <h1>Change admin password</h1><p id="notice" role="status"></p><div id="admin-password-content">Checking administrator access…</div>
     @else
       <h1>Advertising</h1><p>Manage sponsored campaigns for your agricultural business.</p><p id="notice" role="status"></p><div id="ads-content">Sign in as a supplier to manage campaigns.</div>
     @endif
   </main>
-  <footer class="site-footer"><span>FarmLink</span><span>Connecting growers, buyers, and suppliers.</span></footer>
+  @php($supportPhone = (string) config('services.support.phone'))
+  @php($supportEmail = (string) config('services.support.email'))
+  <footer class="site-footer"><span>FarmLink</span><span>Connecting growers, buyers, and suppliers.</span>
+    @if($supportPhone || $supportEmail)
+      <div class="footer-support"><strong>Customer support</strong>
+        @if($supportPhone)<a href="tel:{{ preg_replace('/[^0-9+]/', '', $supportPhone) }}">Call {{ $supportPhone }}</a>@endif
+        @if($supportEmail)<a href="mailto:{{ $supportEmail }}">{{ $supportEmail }}</a>@endif
+      </div>
+    @endif
+  </footer>
 </div><script src="/js/farmlink.js" defer></script></body></html>

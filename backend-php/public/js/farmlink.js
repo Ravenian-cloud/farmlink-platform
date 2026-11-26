@@ -4,7 +4,31 @@
 
   const page = root.dataset.page;
   const tokenKey = 'farmlink_access_token';
+  const themeKey = 'farmlink_theme';
   const apiRoot = '/api/v1';
+  const themeButton = document.querySelector('#theme-toggle');
+  function setTheme(theme, save = true) {
+    const selected = theme === 'dark' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = selected;
+    if (themeButton) {
+      const darkMode = selected === 'dark';
+      themeButton.textContent = darkMode ? 'Light mode' : 'Dark mode';
+      themeButton.setAttribute('aria-label', `Switch to ${darkMode ? 'light' : 'dark'} mode`);
+      themeButton.setAttribute('aria-pressed', String(darkMode));
+    }
+    if (save) {
+      try { localStorage.setItem(themeKey, selected); } catch { /* Keep the choice for this page even if storage is unavailable. */ }
+    }
+  }
+  let savedTheme = 'light';
+  try {
+    const storedTheme = localStorage.getItem(themeKey);
+    if (storedTheme === 'dark' || storedTheme === 'light') savedTheme = storedTheme;
+  } catch { /* Use light mode if browser storage is unavailable. */ }
+  setTheme(savedTheme, false);
+  themeButton?.addEventListener('click', () => {
+    setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+  });
   const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, (character) => ({
     '&': '&amp;',
     '<': '&lt;',
@@ -61,6 +85,73 @@
 
   const asList = (value) => Array.isArray(value) ? value : [];
 
+  function mountWeatherWidget(widget) {
+    if (!widget) return;
+    const button = widget.querySelector('[data-weather-locate]');
+    const status = widget.querySelector('[data-weather-status]');
+    const content = widget.querySelector('[data-weather-content]');
+    button.addEventListener('click', async () => {
+      if (!navigator.geolocation) {
+        status.textContent = 'This browser does not support location access.';
+        status.setAttribute('role', 'alert');
+        return;
+      }
+      button.disabled = true;
+      status.textContent = 'Requesting your location…';
+      status.setAttribute('role', 'status');
+      content.innerHTML = '';
+      try {
+        const position = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: false, timeout: 12000, maximumAge: 600000,
+        }));
+        status.textContent = 'Loading local weather…';
+        const query = new URLSearchParams({
+          latitude: String(position.coords.latitude),
+          longitude: String(position.coords.longitude),
+        });
+        const weather = await api(`/weather/current?${query.toString()}`);
+        const current = weather.current;
+        const maxRainChance = Math.max(0, ...asList(weather.next_hours).map((hour) => Number(hour.rain_chance_percent || 0)));
+        const format = (value, digits = 0) => Number.isFinite(Number(value)) ? Number(value).toFixed(digits) : '—';
+        status.textContent = `Updated ${current.updated_at || 'just now'} · ${weather.location.name}${weather.location.region ? `, ${weather.location.region}` : ''}`;
+        status.setAttribute('role', 'status');
+        button.textContent = 'Refresh weather';
+        content.innerHTML = `
+          <div class="weather-current"><div><strong>${format(current.temperature_c, 1)}°C</strong><span>${escapeHtml(current.condition)}</span></div><p>Feels like ${format(current.feels_like_c, 1)}°C</p></div>
+          <div class="weather-metrics">
+            <div><span>Humidity</span><strong>${format(current.humidity_percent)}%</strong></div>
+            <div><span>Wind</span><strong>${format(current.wind_kph, 1)} km/h</strong></div>
+            <div><span>Rain now</span><strong>${format(current.precipitation_mm, 1)} mm</strong></div>
+            <div><span>UV index</span><strong>${format(current.uv_index, 1)}</strong></div>
+            <div><span>Next 6h rain chance</span><strong>${format(maxRainChance)}%</strong></div>
+          </div>
+          <div class="weather-analysis"><h3>Farm weather analysis</h3><ul>${asList(weather.analysis).map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div>
+          <div class="weather-forecast"><h3>Next hours</h3><div class="weather-hours">${asList(weather.next_hours).map((hour) => `
+            <div><strong>${escapeHtml(String(hour.time || '').slice(11, 16) || '—')}</strong><span>${format(hour.temperature_c)}°C</span><small>${format(hour.rain_chance_percent)}% rain</small></div>`).join('')}</div>
+            <h3>Three-day outlook</h3><div class="weather-days">${asList(weather.next_days).map((day) => `
+              <article><strong>${escapeHtml(day.date || '')}</strong><span>${escapeHtml(day.condition || '')}</span><small>${format(day.minimum_c)}°–${format(day.maximum_c)}°C · ${format(day.rain_chance_percent)}% rain</small></article>`).join('')}</div>
+          </div>
+          ${asList(weather.alerts).length ? `<div class="weather-alerts" role="alert"><h3>Weather alerts</h3>${asList(weather.alerts).map((alert) => `<p><strong>${escapeHtml(alert.headline)}</strong> ${escapeHtml(alert.description)}</p>`).join('')}</div>` : ''}
+          <p class="weather-attribution">Weather data by <a href="${escapeHtml(weather.source_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(weather.source)}</a></p>`;
+      } catch (error) {
+        if (error?.code) {
+          const messages = {
+            1: 'Location permission was denied. Allow location access in your browser to see local weather.',
+            2: 'Your location is unavailable right now. Please try again.',
+            3: 'Location lookup timed out. Please try again.',
+          };
+          status.textContent = messages[error.code] || 'Could not get your location.';
+          status.setAttribute('role', 'alert');
+        } else {
+          status.textContent = error.message;
+          status.setAttribute('role', 'alert');
+        }
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
+
   async function loadUser() {
     try {
       window.farmlinkUser = await api('/me');
@@ -70,9 +161,19 @@
     const user = window.farmlinkUser;
     const accountLink = document.querySelector('a[href="/account"]');
     if (accountLink) accountLink.textContent = user?.name || 'Sign in';
+    const logoutLink = document.querySelector('#logout-link');
+    if (logoutLink) {
+      logoutLink.hidden = !user;
+      logoutLink.addEventListener('click', signOut);
+    }
     if (user && document.querySelector('#admin-link')) document.querySelector('#admin-link').hidden = false;
     if (user?.role === 'supplier' && document.querySelector('#ads-link')) document.querySelector('#ads-link').hidden = false;
     return user;
+  }
+
+  function signOut() {
+    sessionStorage.removeItem(tokenKey);
+    location.href = '/account';
   }
 
   async function loadListings(category = 'produce') {
@@ -97,6 +198,7 @@
 
   function initMarketplace() {
     loadUser().then(() => loadListings());
+    mountWeatherWidget(document.querySelector('#market-weather'));
     document.querySelectorAll('[data-category]').forEach((button) => {
       button.addEventListener('click', () => {
         document.querySelectorAll('[data-category]').forEach((item) => {
@@ -190,10 +292,7 @@
             <p>Account verification: <strong>${escapeHtml(user.kyc_status || 'pending')}</strong></p>
             <button type="button" id="signout">Sign out</button>
           </section>`;
-        target.querySelector('#signout').addEventListener('click', () => {
-          sessionStorage.removeItem(tokenKey);
-          location.href = '/marketplace';
-        });
+        target.querySelector('#signout').addEventListener('click', signOut);
         return;
       }
 
@@ -564,8 +663,15 @@
         <section aria-label="Dashboard summary"><h2>At a glance</h2><ul>
           ${canListProducts ? `<li>Your active listings: ${activeCount}</li>` : ''}
           <li>Open offers: ${bids.filter((bid) => bid.status === 'pending').length}</li><li>Orders: ${transactions.length}</li>
-        </ul></section><section id="sponsored-slot" aria-label="Sponsored advertisement"></section>
+        </ul></section>
+        <section id="local-weather" class="weather-panel" aria-label="Local weather analysis">
+          <div class="weather-heading"><div><span class="auth-eyebrow">LOCAL CONDITIONS</span><h2>Weather near you</h2></div><button type="button" data-weather-locate>Use my location</button></div>
+          <p class="weather-location-note">Allow location access to get current conditions and a farm-focused forecast. Your coordinates are used for this request and are not saved to your profile.</p>
+          <p data-weather-status role="status" aria-live="polite"></p><div data-weather-content></div>
+        </section>
+        <section id="sponsored-slot" aria-label="Sponsored advertisement"></section>
         <section id="premium-slot"></section><section id="market-slot"></section>`;
+      mountWeatherWidget(panel.querySelector('#local-weather'));
       loadSponsoredAd(panel.querySelector('#sponsored-slot'));
       loadPremium(panel.querySelector('#premium-slot'));
       loadMarketInsights(panel.querySelector('#market-slot'));
@@ -899,24 +1005,54 @@
     let articles = [];
     let threads = [];
     let posts = [];
+    let deliveries = [];
     let editingId = null;
 
     async function loadTools() {
-      const [access, articleRows, threadRows, postRows] = await Promise.all([
+      const [access, articleRows, threadRows, postRows, deliveryRows] = await Promise.all([
         api('/community/admin-access'),
         api('/admin/community/articles'),
         api('/admin/community/forum'),
         api('/admin/community/forum/posts'),
+        api('/admin/deliveries/assignments'),
       ]);
       if (!access.authorized) throw new Error('Community administrator access is required.');
       articles = asList(articleRows);
       threads = asList(threadRows);
       posts = asList(postRows);
+      deliveries = asList(deliveryRows);
       renderTools();
     }
 
     function renderTools() {
       target.innerHTML = `
+        <section class="admin-security">
+          <span class="auth-eyebrow">ACCOUNT SECURITY</span><h2>Admin password</h2>
+          <p>Update the password you use to sign in to FarmLink.</p>
+          <button type="button" id="open-password-change">Change password</button>
+        </section>
+        <section class="admin-operations">
+          <div class="admin-section-heading"><div><span class="auth-eyebrow">OPERATIONS</span><h2>Delivery attendant assignments</h2></div><span class="admin-count">${deliveries.length} deliveries</span></div>
+          <p>Assign an available transport provider to each delivery. Providers must serve the pickup or delivery county.</p>
+          ${deliveries.length ? deliveries.map((delivery) => {
+            const canAssign = ['requested', 'assigned'].includes(delivery.status);
+            const providers = asList(delivery.eligible_providers);
+            return `<article class="assignment-card">
+              <div class="assignment-details"><span class="assignment-status status-${escapeHtml(delivery.status)}">${escapeHtml(delivery.status.replaceAll('_', ' '))}</span>
+                <h3>${escapeHtml(delivery.product || 'Delivery')}</h3><p>${escapeHtml(delivery.pickup_county)} → ${escapeHtml(delivery.delivery_county)}</p>
+                <small>Buyer: ${escapeHtml(delivery.buyer)} · Seller: ${escapeHtml(delivery.seller)}</small>
+                <p class="assignment-current">${delivery.provider ? `Assigned to ${escapeHtml(delivery.provider.name)}` : 'No attendant assigned yet'}</p>
+              </div>
+              ${canAssign ? `<form class="assignment-form" data-assignment-form="${escapeHtml(delivery.id)}">
+                <label>Transport attendant<select name="provider_id" required ${providers.length ? '' : 'disabled'}>
+                  <option value="">${providers.length ? 'Choose an attendant' : 'No available attendants in these counties'}</option>
+                  ${providers.map((provider) => `<option value="${escapeHtml(provider.id)}" ${delivery.provider?.id === provider.id ? 'selected' : ''}>${escapeHtml(provider.name)} · ${escapeHtml(provider.vehicle_type)} · ${escapeHtml(provider.county)}</option>`).join('')}
+                </select></label>
+                <button type="submit" ${providers.length ? '' : 'disabled'}>${delivery.provider ? 'Update assignment' : 'Assign attendant'}</button>
+              </form>` : '<p class="assignment-locked">Assignment locked after pickup</p>'}
+            </article>`;
+          }).join('') : '<p>No delivery requests yet.</p>'}
+        </section>
         <section><h2>${editingId ? 'Edit Knowledge Hub content' : 'Create a Knowledge Hub article or tutorial'}</h2>
           <form id="article-form">
             <label>Title<input name="title" minlength="5" maxlength="180" required></label>
@@ -945,6 +1081,26 @@
             </article>`).join('')}
         </section>`;
       const articleForm = target.querySelector('#article-form');
+      target.querySelector('#open-password-change').addEventListener('click', () => { location.href = '/admin-password'; });
+      target.querySelectorAll('[data-assignment-form]').forEach((form) => {
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const providerId = new FormData(form).get('provider_id');
+          if (!providerId) return;
+          const button = form.querySelector('button[type="submit"]');
+          button.disabled = true;
+          try {
+            await api(`/admin/deliveries/${encodeURIComponent(form.dataset.assignmentForm)}/assignment`, {
+              method: 'PATCH', body: { provider_id: providerId },
+            });
+            notice('Delivery attendant assigned.');
+            await loadTools();
+          } catch (error) {
+            notice(error.message, true);
+            button.disabled = false;
+          }
+        });
+      });
       if (editingId) {
         const article = articles.find((item) => item.id === editingId);
         if (article) {
@@ -1021,6 +1177,52 @@
     }
   }
 
+  async function initAdminPassword(user) {
+    const target = document.querySelector('#admin-password-content');
+    if (!user) {
+      target.innerHTML = '<p>Sign in with an administrator account to change its password.</p><a href="/account">Sign in</a>';
+      return;
+    }
+    try {
+      const access = await api('/community/admin-access');
+      if (!access.authorized) throw new Error('Administrator access is required to change this password.');
+      target.innerHTML = `
+        <section class="admin-password-card">
+          <a class="admin-back-link" href="/community-admin">← Back to admin dashboard</a>
+          <h2>Change your password</h2>
+          <p>Enter your current password and choose a new password with at least 12 characters.</p>
+          <form id="admin-password-form" class="admin-password-form">
+            <label>Current password<input name="current_password" type="password" autocomplete="current-password" required maxlength="128"></label>
+            <label>New password<input name="password" type="password" autocomplete="new-password" required minlength="12" maxlength="128"></label>
+            <label>Confirm new password<input name="password_confirmation" type="password" autocomplete="new-password" required minlength="12" maxlength="128"></label>
+            <p data-password-message role="status" aria-live="polite"></p>
+            <button type="submit">Save new password</button>
+          </form>
+        </section>`;
+      target.querySelector('#admin-password-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const message = form.querySelector('[data-password-message]');
+        const submit = form.querySelector('button[type="submit"]');
+        submit.disabled = true;
+        message.textContent = '';
+        try {
+          await api('/admin/password', { method: 'PATCH', body: Object.fromEntries(new FormData(form).entries()) });
+          form.reset();
+          message.textContent = 'Password changed successfully.';
+          message.setAttribute('role', 'status');
+        } catch (error) {
+          message.textContent = error.message;
+          message.setAttribute('role', 'alert');
+        } finally {
+          submit.disabled = false;
+        }
+      });
+    } catch (error) {
+      target.innerHTML = `<p role="alert">${escapeHtml(error.message)}</p><a href="/community-admin">Back to admin dashboard</a>`;
+    }
+  }
+
   async function initAds(user) {
     const target = document.querySelector('#ads-content');
     if (user?.role !== 'supplier') {
@@ -1094,6 +1296,7 @@
     else if (page === 'dashboard') loadDashboard(user);
     else if (page === 'impact') initImpact(user);
     else if (page === 'community-admin') initCommunityAdmin(user);
+    else if (page === 'admin-password') initAdminPassword(user);
     else if (page === 'ads') initAds(user);
   });
 })();

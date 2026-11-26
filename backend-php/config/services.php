@@ -1,8 +1,13 @@
 <?php
 
 return [
+    'support' => [
+        'phone' => env('SUPPORT_PHONE'),
+        'email' => env('SUPPORT_EMAIL'),
+    ],
     'weather' => [
         'webhook_secret' => env('WEATHER_WEBHOOK_SECRET'),
+        'api_key' => env('WEATHER_API_KEY'),
     ],
     'pilot' => [
         'feedback_admin_ids' => env('PILOT_FEEDBACK_ADMIN_IDS', ''),

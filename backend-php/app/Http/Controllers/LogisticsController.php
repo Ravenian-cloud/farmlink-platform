@@ -14,6 +14,68 @@ use Illuminate\Validation\Rule;
 
 class LogisticsController extends Controller
 {
+    public function adminAssignments(): JsonResponse
+    {
+        $providers = TransportService::query()
+            ->where('available', true)
+            ->with('provider:id,name,phone')
+            ->get();
+        $deliveries = Delivery::query()
+            ->with(['transaction.product:id,name', 'transaction.buyer:id,name', 'transaction.seller:id,name', 'provider:id,name'])
+            ->latest()
+            ->limit(200)
+            ->get()
+            ->map(static function (Delivery $delivery) use ($providers): array {
+                $eligible = $providers->filter(static fn (TransportService $service): bool => in_array(
+                    mb_strtolower($service->county),
+                    [mb_strtolower($delivery->pickup_county), mb_strtolower($delivery->delivery_county)],
+                    true,
+                ))->map(static fn (TransportService $service): array => [
+                    'id' => $service->provider_id,
+                    'name' => $service->provider->name,
+                    'county' => $service->county,
+                    'vehicle_type' => $service->vehicle_type,
+                ])->values();
+
+                return [
+                    'id' => $delivery->id,
+                    'status' => $delivery->status,
+                    'pickup_county' => $delivery->pickup_county,
+                    'delivery_county' => $delivery->delivery_county,
+                    'product' => $delivery->transaction->product->name,
+                    'buyer' => $delivery->transaction->buyer->name,
+                    'seller' => $delivery->transaction->seller->name,
+                    'provider' => $delivery->provider ? ['id' => $delivery->provider_id, 'name' => $delivery->provider->name] : null,
+                    'eligible_providers' => $eligible,
+                ];
+            });
+
+        return response()->json(['data' => $deliveries]);
+    }
+
+    public function adminAssignProvider(Request $request, Delivery $delivery): JsonResponse
+    {
+        $validated = $request->validate(['provider_id' => ['required', 'uuid', 'exists:users,id']]);
+        $updated = DB::transaction(function () use ($delivery, $validated): Delivery {
+            $locked = Delivery::query()->lockForUpdate()->findOrFail($delivery->id);
+            abort_unless(in_array($locked->status, ['requested', 'assigned'], true), 409, 'This delivery can no longer be reassigned.');
+
+            $service = TransportService::query()
+                ->where('provider_id', $validated['provider_id'])
+                ->where('available', true)
+                ->first();
+            abort_unless($service && in_array(mb_strtolower($service->county), [
+                mb_strtolower($locked->pickup_county),
+                mb_strtolower($locked->delivery_county),
+            ], true), 422, 'Choose an available transport provider in the pickup or delivery county.');
+
+            $locked->forceFill(['provider_id' => $service->provider_id, 'status' => 'assigned'])->save();
+            return $locked->load('provider:id,name');
+        });
+
+        return response()->json(['data' => $updated]);
+    }
+
     public function openDeliveries(Request $request): JsonResponse
     {
         /** @var User $provider */

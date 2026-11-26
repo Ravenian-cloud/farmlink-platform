@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-labelledby="title desc">
+  <title id="title">FarmLink local harvest</title>
+  <desc id="desc">Fresh produce in a basket against a sunny green farm landscape.</desc>
+  <defs>
+    <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#dff1c5"/><stop offset="1" stop-color="#f8f5dc"/></linearGradient>
+    <linearGradient id="field" x2="0" y2="1"><stop stop-color="#97bd65"/><stop offset="1" stop-color="#477b4d"/></linearGradient>
+    <linearGradient id="basket" x2="0" y2="1"><stop stop-color="#c98c4d"/><stop offset="1" stop-color="#8d5837"/></linearGradient>
+    <clipPath id="scene"><rect x="24" y="24" width="592" height="372" rx="34"/></clipPath>
+  </defs>
+  <g clip-path="url(#scene)">
+    <path fill="url(#sky)" d="M24 24h592v372H24z"/>
+    <circle cx="497" cy="100" r="43" fill="#f6c95e"/>
+    <path fill="#b4ce83" d="M24 227q116-88 240-6t213-15q66-48 139-18v208H24z"/>
+    <path fill="url(#field)" d="M24 274q119-76 236-10t208-5q73-65 148-36v173H24z"/>
+    <path fill="#dce8af" d="M24 338q145-89 282-38t310-35v131H24z" opacity=".8"/>
+    <path d="M62 288q97-51 173-25M401 283q78-49 146-37" fill="none" stroke="#f1edc9" stroke-linecap="round" stroke-width="5" opacity=".8"/>
+    <g fill="#56824d"><path d="M109 214q-7-51 6-71 22 29 7 71zM102 202q-28-28-23-49 28 12 30 39zM117 198q13-34 34-41-2 31-29 50z"/><path d="M529 218q-7-51 6-71 22 29 7 71zM522 206q-28-28-23-49 28 12 30 39zM537 202q13-34 34-41-2 31-29 50z"/></g>
+    <ellipse cx="322" cy="340" rx="173" ry="28" fill="#315c3c" opacity=".16"/>
+    <path d="M225 244q6-99 97-99t97 99" fill="none" stroke="#8d5837" stroke-width="13"/>
+    <path fill="url(#basket)" d="M169 228h306l-35 125q-4 17-22 17H226q-18 0-22-17z"/>
+    <path d="M183 250h278M190 278h262M198 307h245M207 336h225" fill="none" stroke="#e2ae70" stroke-linecap="round" stroke-width="8" opacity=".9"/>
+    <path fill="#e5a43d" d="M219 226q2-45 39-47 34 2 37 47z"/><path fill="#f1bd4f" d="M302 222q4-57 46-57 40 2 44 57z"/><path fill="#d8703c" d="M386 229q4-40 39-42 30 2 35 42z"/>
+    <path fill="#548a4d" d="M238 185q-22-31 6-43 23 17 1 44M253 182q2-35 29-34 11 23-18 39M322 165q-16-31 13-41 18 21-4 44M343 162q9-34 34-27 7 26-24 36M408 188q-10-29 17-36 15 20-8 39M427 187q11-31 33-23 4 25-24 34"/>
+    <circle cx="285" cy="218" r="7" fill="#f5d982"/><circle cx="368" cy="204" r="7" fill="#f5d982"/>
+    <path fill="#76a94e" d="M258 237q-14-32 13-45 25 19 7 48z"/><path fill="#639244" d="M278 240q0-35 29-38 17 26-16 45z"/>
+  </g>
+  <rect x="24.75" y="24.75" width="590.5" height="370.5" rx="33.25" fill="none" stroke="#fff" stroke-opacity=".72" stroke-width="1.5"/>
+</svg>
