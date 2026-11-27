@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\AdminAccountController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AdCampaignController;
 use App\Http\Controllers\BidController;
@@ -35,6 +34,7 @@ Route::prefix('v1')->group(function (): void {
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
     Route::post('/webhooks/mpesa', [PaymentController::class, 'callback'])->middleware('throttle:120,1');
     Route::post('/webhooks/weather', WeatherWebhookController::class)->middleware('throttle:60,1');
+    Route::get('/weather/current', [WeatherController::class, 'current'])->middleware('throttle:30,1');
     Route::get('/ads/{campaign}/creative', [AdCampaignController::class, 'creative'])->name('ads.creative');
     Route::get('/policy/insights', [PolicyInsightsController::class, 'index'])
         ->middleware([AuthenticatePolicyPartner::class, 'throttle:30,1']);
@@ -48,9 +48,9 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/forum/threads', [CommunityController::class, 'threads'])->middleware('throttle:60,1');
     Route::get('/forum/threads/{thread}', [CommunityController::class, 'thread'])->middleware('throttle:60,1');
     Route::get('/products', [ProductController::class, 'index']);
+    Route::get('/products/price-analysis', [ProductController::class, 'priceAnalysis']);
     Route::get('/products/{product}', [ProductController::class, 'show']);
     Route::get('/analytics/market', [AnalyticsController::class, 'index'])->middleware('throttle:60,1');
-    Route::get('/weather/current', [WeatherController::class, 'current'])->middleware('throttle:10,1');
 
     Route::middleware(AuthenticateJwt::class)->group(function (): void {
         Route::get('/me', [AuthController::class, 'me']);
@@ -60,8 +60,6 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('/admin/kyc/users/{userId}/review', [KycReviewController::class, 'review'])
             ->middleware([RequireKycAdministrator::class, 'throttle:30,1']);
         Route::get('/community/admin-access', [CommunityController::class, 'adminAccess']);
-        Route::patch('/admin/password', [AdminAccountController::class, 'changePassword'])
-            ->middleware([RequireCommunityAdministrator::class, 'throttle:5,1']);
         Route::get('/admin/community/articles', [CommunityController::class, 'adminArticles'])
             ->middleware(RequireCommunityAdministrator::class);
         Route::post('/admin/community/articles', [CommunityController::class, 'storeArticle'])

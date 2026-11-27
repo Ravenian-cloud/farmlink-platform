@@ -42,6 +42,29 @@ class ProductController extends Controller
         return response()->json($products);
     }
 
+    public function priceAnalysis(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'category' => ['sometimes', Rule::in(['produce', 'input'])],
+        ]);
+        $groups = Product::query()
+            ->where('status', 'active')
+            ->when(isset($validated['category']), fn ($query) => $query->where('category', $validated['category']))
+            ->get(['price_minor', 'unit', 'currency'])
+            ->groupBy(fn (Product $product): string => strtolower($product->unit) . '|' . ($product->currency ?: 'KES'))
+            ->map(function ($products): array {
+                $first = $products->first();
+                return [
+                    'unit' => $first->unit,
+                    'currency' => $first->currency ?: 'KES',
+                    'average_price_minor' => (int) round($products->avg('price_minor')),
+                    'listing_count' => $products->count(),
+                ];
+            })->values();
+
+        return response()->json(['data' => $groups]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();

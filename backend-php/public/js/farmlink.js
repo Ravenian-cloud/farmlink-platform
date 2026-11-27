@@ -180,16 +180,68 @@
     const grid = document.querySelector('#listing-grid');
     grid.innerHTML = '<p role="status">Loading listings…</p>';
     try {
-      const products = asList(await api(`/products?category=${encodeURIComponent(category)}&per_page=24`));
+      const [productsResult, priceAnalysisResult] = await Promise.all([
+        api(`/products?category=${encodeURIComponent(category)}&per_page=24`),
+        api(`/products/price-analysis?category=${encodeURIComponent(category)}`).catch(() => []),
+      ]);
+      const products = asList(productsResult);
+      const priceAnalysis = asList(priceAnalysisResult);
+      const averageFor = (product) => priceAnalysis.find((average) =>
+        average.unit?.toLowerCase() === product.unit?.toLowerCase()
+        && average.currency === (product.currency || 'KES'));
+      const priceComparison = (product) => {
+        const average = averageFor(product);
+        if (!average || average.listing_count < 2) return '';
+        const difference = ((Number(product.price_minor) - average.average_price_minor) / average.average_price_minor) * 100;
+        const comparison = Math.abs(difference) < 1
+          ? 'Near the website average'
+          : `${Math.abs(difference).toFixed(0)}% ${difference > 0 ? 'above' : 'below'} website average`;
+        return `<p class="price-comparison">${comparison} (${money(average.average_price_minor, average.currency)} per ${escapeHtml(average.unit)} average across ${average.listing_count} listings)</p>`;
+      };
+      const renderPriceCharts = () => priceAnalysis.map((average) => {
+        const matchingProducts = products.filter((product) => averageFor(product) === average);
+        if (matchingProducts.length === 0) return '';
+        const bands = [
+          { label: 'Below average', color: 'below', count: 0 },
+          { label: 'Near average', color: 'near', count: 0 },
+          { label: 'Above average', color: 'above', count: 0 },
+        ];
+        matchingProducts.forEach((product) => {
+          const ratio = Number(product.price_minor) / average.average_price_minor;
+          const band = ratio < 0.99 ? 0 : ratio > 1.01 ? 2 : 1;
+          bands[band].count += 1;
+        });
+        const radius = 58;
+        const circumference = 2 * Math.PI * radius;
+        let offset = 0;
+        const slices = bands.filter((band) => band.count > 0).map((band) => {
+          const length = (band.count / matchingProducts.length) * circumference;
+          const slice = `<circle class="price-pie-slice price-pie-${band.color}" cx="82" cy="82" r="${radius}" stroke-dasharray="${length} ${circumference - length}" stroke-dashoffset="${-offset}" />`;
+          offset += length;
+          return slice;
+        }).join('');
+        const legend = bands.map((band) => `<li><span class="price-pie-key price-pie-${band.color}"></span>${band.label}: ${band.count} (${Math.round(band.count / matchingProducts.length * 100)}%)</li>`).join('');
+        return `<section class="price-chart-card" aria-label="Price comparison chart for ${escapeHtml(average.unit)}">
+          <h3>Price distribution per ${escapeHtml(average.unit)}</h3>
+          <p>Website average: ${money(average.average_price_minor, average.currency)} per ${escapeHtml(average.unit)}, based on ${average.listing_count} active listings. The pie classifies the ${matchingProducts.length} listings currently displayed.</p>
+          <div class="price-pie-layout"><svg class="price-pie-chart" viewBox="0 0 164 164" role="img" aria-label="Pie chart of displayed prices below, near, and above the website average">
+            <g transform="rotate(-90 82 82)"><circle class="price-pie-track" cx="82" cy="82" r="${radius}" />${slices}</g>
+            <text class="price-pie-total" x="82" y="78">${matchingProducts.length}</text><text class="price-pie-caption" x="82" y="96">listings</text>
+          </svg><ul class="price-pie-legend">${legend}</ul></div>
+        </section>`;
+      }).join('');
       grid.innerHTML = products.length
-        ? products.map((product) => `
+        ? `<p class="price-analysis-summary">Average active ${category === 'produce' ? 'produce' : 'input'} listing prices by unit: ${priceAnalysis.length
+          ? priceAnalysis.map((average) => `${money(average.average_price_minor, average.currency)} per ${escapeHtml(average.unit)} (${average.listing_count} listings)`).join(' · ')
+          : 'not enough listing data yet.'}</p>${renderPriceCharts()}${products.map((product) => `
           <article>
             <h2>${escapeHtml(product.name)}</h2>
             <p>${escapeHtml(category === 'produce' ? product.crop : product.input_type)}${product.brand ? ` · ${escapeHtml(product.brand)}` : ''}</p>
             <p class="listing-price">${money(product.price_minor, product.currency || 'KES')} <span>per ${escapeHtml(product.unit)}</span></p>
+            ${priceComparison(product)}
             <p>${escapeHtml(product.quantity_available)} ${escapeHtml(product.unit)} available · ${escapeHtml(product.county || 'Location not specified')}</p>
             ${window.farmlinkUser?.role === 'buyer' ? `<button type="button" data-offer="${escapeHtml(product.id)}" data-name="${escapeHtml(product.name)}" data-unit="${escapeHtml(product.unit)}" data-currency="${escapeHtml(product.currency || 'KES')}" data-max="${Number(product.quantity_available)}">Make an offer</button>` : ''}
-          </article>`).join('')
+          </article>`).join('')}`
         : `<p>No active ${category === 'produce' ? 'produce' : 'input'} listings are available.</p>`;
     } catch (error) {
       showError(grid, error, 'Listings could not be loaded.');

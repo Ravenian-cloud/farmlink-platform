@@ -20,7 +20,17 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; background: var(--page-bg); color: var(--text); transition: background-color .2s ease, color .2s ease; }
+body {
+  margin: 0;
+  min-width: 320px;
+  background-color: var(--page-bg);
+  background-image: linear-gradient(rgb(245 247 241 / 82%), rgb(245 247 241 / 82%)), url('/images/farm-background.jpg');
+  background-position: center, center;
+  background-size: cover;
+  background-attachment: fixed;
+  color: var(--text);
+  transition: background-color .2s ease, color .2s ease;
+}
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 button:disabled { opacity: .62; cursor: wait; }
@@ -61,13 +71,14 @@ main > section { margin-top: 22px; }
 .marketplace-hero {
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .9fr); align-items: center; gap: 24px;
   min-height: 300px; margin: 0 0 26px !important; padding: clamp(24px, 5vw, 52px) !important;
-  overflow: hidden; border: 1px solid #e3ead8; border-radius: 26px; background: linear-gradient(120deg, #f7f9ed, #edf4df 68%, #e6efd4);
+  overflow: hidden; border: 1px solid #e3ead8; border-radius: 26px;
+  background: linear-gradient(90deg, rgb(20 37 24 / 76%), rgb(20 37 24 / 20%)), url('/images/farm-background.jpg') center 55% / cover no-repeat;
   box-shadow: 0 18px 48px rgb(32 49 39 / 7%);
 }
 .marketplace-hero-copy { position: relative; z-index: 1; }
-.marketplace-hero h1 { max-width: 530px; margin: 13px 0; color: var(--green-dark); font: 800 clamp(34px, 4.5vw, 54px)/1.06 'Segoe UI', sans-serif; letter-spacing: -.05em; }
-.marketplace-hero p { max-width: 520px; margin: 0; color: var(--muted); font-size: 16px; line-height: 1.65; }
-.marketplace-hero img { display: block; width: 100%; height: auto; filter: drop-shadow(0 16px 20px rgb(40 70 38 / 12%)); }
+.marketplace-hero h1 { max-width: 530px; margin: 13px 0; color: #fff; font: 800 clamp(34px, 4.5vw, 54px)/1.06 'Segoe UI', sans-serif; letter-spacing: -.05em; text-shadow: 0 2px 18px rgb(0 0 0 / 30%); }
+.marketplace-hero p { max-width: 520px; margin: 0; color: rgb(255 255 255 / 92%); font-size: 16px; line-height: 1.65; }
+.marketplace-hero img { display: none; }
 main article { margin: 14px 0; box-shadow: none; }
 main article h2, main article h3 { margin-top: 0; }
 main p, main li { line-height: 1.6; }
@@ -101,6 +112,24 @@ main section[aria-label='Input listings'] { display: grid; grid-template-columns
 main section[aria-label='Input listings'] article { margin: 0; }
 .listing-price { color: var(--green-dark); font-size: 20px; font-weight: 800; }
 .listing-price span { color: var(--muted); font-size: 13px; font-weight: 500; }
+.price-analysis-summary { grid-column: 1 / -1; margin: 0; padding: 13px 16px; border: 1px solid #dce8d2; border-radius: 12px; background: rgb(243 247 235 / 92%); color: var(--green-dark); font-size: 13px; font-weight: 600; }
+.price-comparison { margin: -8px 0 12px; color: var(--muted); font-size: 12px; }
+.price-chart-card { grid-column: 1 / -1; min-width: 0; margin: 0; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: rgb(255 255 255 / 94%); }
+.price-chart-card h3 { margin: 0 0 4px; font-size: 16px; }
+.price-chart-card > p { margin: 0 0 8px; color: var(--muted); font-size: 12px; }
+.price-pie-layout { display: flex; align-items: center; flex-wrap: wrap; gap: 18px; }
+.price-pie-chart { display: block; width: 164px; max-width: 100%; height: auto; overflow: visible; }
+.price-pie-track, .price-pie-slice { fill: none; stroke-width: 24; }
+.price-pie-track { stroke: #e8eee5; }
+.price-pie-slice { stroke-linecap: butt; }
+.price-pie-below { stroke: #6c9f50; background-color: #6c9f50; }
+.price-pie-near { stroke: #e0ae47; background-color: #e0ae47; }
+.price-pie-above { stroke: #cf755c; background-color: #cf755c; }
+.price-pie-total { fill: var(--heading); font: 800 24px 'Segoe UI', sans-serif; text-anchor: middle; }
+.price-pie-caption { fill: var(--muted); font: 11px 'Segoe UI', sans-serif; text-anchor: middle; }
+.price-pie-legend { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; color: var(--text); font-size: 13px; }
+.price-pie-legend li { display: flex; align-items: center; gap: 8px; }
+.price-pie-key { width: 11px; height: 11px; flex: 0 0 11px; border-radius: 3px; }
 .weather-panel { overflow: hidden; background: linear-gradient(145deg, #f5f8ee, #fff 65%); }
 .weather-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .weather-heading h2 { margin: 6px 0 0; }
@@ -268,6 +297,9 @@ main section[aria-label='Input listings'] article { margin: 0; }
   --control-text: #e4eee7;
   --shadow: 0 12px 32px rgb(0 0 0 / 24%);
 }
+:root[data-theme='dark'] body {
+  background-image: linear-gradient(rgb(12 19 14 / 68%), rgb(12 19 14 / 68%)), url('/images/farm-background.jpg');
+}
 
 :root[data-theme='dark'] h2,
 :root[data-theme='dark'] h3,
@@ -285,7 +317,10 @@ main section[aria-label='Input listings'] article { margin: 0; }
 :root[data-theme='dark'] .site-footer span:first-child { color: #a9dcb3; }
 :root[data-theme='dark'] .site-header nav .logout-button,
 :root[data-theme='dark'] .site-header nav .theme-toggle { border-color: #526757; color: #c8e4ca; }
-:root[data-theme='dark'] .marketplace-hero { border-color: #354938; background: linear-gradient(120deg, #202e23, #293b2b 68%, #314631); }
+:root[data-theme='dark'] .marketplace-hero {
+  border-color: #354938;
+  background-image: linear-gradient(90deg, rgb(10 22 14 / 80%), rgb(10 22 14 / 28%)), url('/images/farm-background.jpg');
+}
 :root[data-theme='dark'] .marketplace-hero .auth-eyebrow,
 :root[data-theme='dark'] .auth-eyebrow,
 :root[data-theme='dark'] .auth-step { color: #b5d897; }
@@ -305,7 +340,6 @@ main section[aria-label='Input listings'] article { margin: 0; }
 :root[data-theme='dark'] main nav[aria-label] button[aria-pressed='true'] { background: #346344; color: #fff; }
 :root[data-theme='dark'] main [role='status'] { color: #c0dda5; }
 :root[data-theme='dark'] main [role='alert'] { color: #ffaaaa; }
-:root[data-theme='dark'] .marketplace-hero,
 :root[data-theme='dark'] .weather-panel { background-image: linear-gradient(145deg, #202e24, #1b2720 70%); }
 :root[data-theme='dark'] .weather-current { background: #293a2d; }
 :root[data-theme='dark'] .weather-current span,
@@ -316,6 +350,9 @@ main section[aria-label='Input listings'] article { margin: 0; }
 :root[data-theme='dark'] .weather-alerts { border-color: #805c3c; background: #382b20; color: #f0c99f; }
 :root[data-theme='dark'] .admin-count,
 :root[data-theme='dark'] .assignment-status { border-color: #405643; background: #2b3c2e; color: #c6e5b6; }
+:root[data-theme='dark'] .price-analysis-summary { border-color: #405643; background: rgb(43 60 46 / 94%); color: #c6e5b6; }
+:root[data-theme='dark'] .price-chart-card { border-color: #405643; background: rgb(29 41 34 / 96%); }
+:root[data-theme='dark'] .price-pie-track { stroke: #34443a; }
 :root[data-theme='dark'] .status-delivered { background: #263d2e; color: #a9dfb6; }
 :root[data-theme='dark'] .status-in_transit,
 :root[data-theme='dark'] .status-picked_up { background: #433721; color: #f0d18c; }
