@@ -27,7 +27,7 @@ return [
         'callback_url' => env('MPESA_CALLBACK_URL'),
     ],
     'monetization' => [
-        'premium_monthly_minor' => (int) env('PREMIUM_MONTHLY_MINOR', 0),
+        'premium_monthly_minor' => (int) env('PREMIUM_MONTHLY_MINOR', 50000),
         'ad_campaign_minor' => (int) env('AD_CAMPAIGN_MONTHLY_MINOR', 0),
         'ad_admin_ids' => env('AD_ADMIN_IDS', ''),
     ],

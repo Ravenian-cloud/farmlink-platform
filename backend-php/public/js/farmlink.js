@@ -887,11 +887,12 @@
       const paymentPending = ['initiated', 'pending'].includes(subscription.latest_payment_status);
       slot.innerHTML = `
         <h2>FarmLink Premium</h2>
-        <p>${subscription.status === 'active' ? `Premium active until ${escapeHtml(new Date(subscription.ends_at).toLocaleDateString())}.` : 'Get advanced market insights and increased visibility for your listings.'}</p>
+        <p>${subscription.status === 'active' ? `Premium active until ${escapeHtml(new Date(subscription.ends_at).toLocaleDateString())}.` : 'Join FarmLink Premium to unlock more tools for your farm and listings.'}</p>
+        ${subscription.status !== 'active' ? '<ul><li>Advanced historical market insights</li><li>Increased visibility for your marketplace listings</li></ul>' : ''}
         ${subscription.price_minor > 0 ? `<p>Price: ${money(subscription.price_minor)} per 30 days.</p>` : ''}
         <p>30-day subscription. Renewal is manual; no automatic recurring charge.</p>
         ${subscription.status !== 'active' && !paymentPending && subscription.price_minor >= 100 && subscription.price_minor % 100 === 0
-          ? '<form id="premium-form"><label>M-Pesa phone number<input name="phone" type="tel" maxlength="32" required></label><button type="submit">Continue with M-Pesa</button></form>'
+          ? '<form id="premium-form"><label>M-Pesa phone number<input name="phone" type="tel" maxlength="32" placeholder="+2547…" required></label><button type="submit">Join Premium with M-Pesa</button></form>'
           : subscription.status !== 'active' && (!subscription.price_minor || subscription.price_minor < 100 || subscription.price_minor % 100 !== 0)
             ? '<p>Premium checkout is not enabled yet.</p>'
             : ''}

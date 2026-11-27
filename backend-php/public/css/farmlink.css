@@ -1,5 +1,5 @@
 :root {
-  font-family: 'Aptos', 'Segoe UI', sans-serif;
+  font-family: 'Segoe UI', Arial, sans-serif;
   color: var(--text);
   background: var(--page-bg);
   font-synthesis: none;
@@ -32,6 +32,7 @@ body {
   transition: background-color .2s ease, color .2s ease;
 }
 button, input, select, textarea { font: inherit; }
+code, pre, kbd, samp, .mono, [data-monospace] { font-family: 'Segoe UI', Arial, sans-serif; }
 button { cursor: pointer; }
 button:disabled { opacity: .62; cursor: wait; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
@@ -45,9 +46,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   gap: 24px; padding: 12px max(24px, calc((100vw - 1180px) / 2)); background: rgb(255 255 255 / 96%);
   border-bottom: 1px solid var(--line); backdrop-filter: blur(12px);
 }
-.brand { display: flex; align-items: center; gap: 10px; color: var(--green-dark); text-decoration: none; font: 800 18px 'Segoe UI', sans-serif; white-space: nowrap; }
-.brand small { display: block; color: var(--muted); font: 500 10px 'Segoe UI', sans-serif; letter-spacing: .02em; }
-.brand-mark { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px 12px 12px 4px; color: var(--green-dark); background: var(--lime); font: 800 21px 'Segoe UI', sans-serif; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--green-dark); text-decoration: none; font: 800 18px 'Segoe UI', Arial, sans-serif; white-space: nowrap; }
+.brand small { display: block; color: var(--muted); font: 500 10px 'Segoe UI', Arial, sans-serif; letter-spacing: .02em; }
+.brand-mark { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px 12px 12px 4px; color: var(--green-dark); background: var(--lime); font: 800 21px 'Segoe UI', Arial, sans-serif; }
 .site-header nav { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 .site-header nav button { border: 0; background: transparent; color: #536458; border-radius: 999px; padding: 9px 12px; font-size: 13px; font-weight: 600; }
 .site-header nav button:hover, .site-header nav button.active { background: #edf4e8; color: var(--green-dark); }
@@ -60,9 +61,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .site-header nav .account-link { margin-left: 8px; border: 1px solid #cbdac8; color: var(--green); }
 
 main { width: min(100% - 40px, 1120px); margin: 38px auto 64px; flex: 1; }
-main > h1 { margin: 0 0 10px; color: var(--green-dark); font: 800 clamp(28px, 4vw, 40px)/1.15 'Segoe UI', sans-serif; letter-spacing: -.04em; }
+main > h1 { margin: 0 0 10px; color: var(--green-dark); font: 800 clamp(28px, 4vw, 40px)/1.15 'Segoe UI', Arial, sans-serif; letter-spacing: -.04em; }
 main > h1 + p { max-width: 760px; color: var(--muted); line-height: 1.65; }
-h2, h3, h4 { color: #294433; font-family: 'Segoe UI', sans-serif; }
+h2, h3, h4 { color: #294433; font-family: 'Segoe UI', Arial, sans-serif; }
 h2 { font-size: 22px; }
 main > section, main article, main form, main [role='dialog'] > form {
   border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); padding: 22px;
@@ -76,7 +77,7 @@ main > section { margin-top: 22px; }
   box-shadow: 0 18px 48px rgb(32 49 39 / 7%);
 }
 .marketplace-hero-copy { position: relative; z-index: 1; }
-.marketplace-hero h1 { max-width: 530px; margin: 13px 0; color: #fff; font: 800 clamp(34px, 4.5vw, 54px)/1.06 'Segoe UI', sans-serif; letter-spacing: -.05em; text-shadow: 0 2px 18px rgb(0 0 0 / 30%); }
+.marketplace-hero h1 { max-width: 530px; margin: 13px 0; color: #fff; font: 800 clamp(34px, 4.5vw, 54px)/1.06 'Segoe UI', Arial, sans-serif; letter-spacing: -.05em; text-shadow: 0 2px 18px rgb(0 0 0 / 30%); }
 .marketplace-hero p { max-width: 520px; margin: 0; color: rgb(255 255 255 / 92%); font-size: 16px; line-height: 1.65; }
 .marketplace-hero img { display: none; }
 main article { margin: 14px 0; box-shadow: none; }
@@ -125,8 +126,8 @@ main section[aria-label='Input listings'] article { margin: 0; }
 .price-pie-below { stroke: #6c9f50; background-color: #6c9f50; }
 .price-pie-near { stroke: #e0ae47; background-color: #e0ae47; }
 .price-pie-above { stroke: #cf755c; background-color: #cf755c; }
-.price-pie-total { fill: var(--heading); font: 800 24px 'Segoe UI', sans-serif; text-anchor: middle; }
-.price-pie-caption { fill: var(--muted); font: 11px 'Segoe UI', sans-serif; text-anchor: middle; }
+.price-pie-total { fill: var(--heading); font: 800 24px 'Segoe UI', Arial, sans-serif; text-anchor: middle; }
+.price-pie-caption { fill: var(--muted); font: 11px 'Segoe UI', Arial, sans-serif; text-anchor: middle; }
 .price-pie-legend { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; color: var(--text); font-size: 13px; }
 .price-pie-legend li { display: flex; align-items: center; gap: 8px; }
 .price-pie-key { width: 11px; height: 11px; flex: 0 0 11px; border-radius: 3px; }
@@ -136,7 +137,7 @@ main section[aria-label='Input listings'] article { margin: 0; }
 .weather-location-note, [data-weather-status] { color: var(--muted); font-size: 13px; }
 .weather-current { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; padding: 18px 20px; border-radius: 16px; background: #eaf2df; }
 .weather-current div { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; }
-.weather-current strong { color: var(--green-dark); font: 800 40px/1 'Segoe UI', sans-serif; letter-spacing: -.04em; }
+.weather-current strong { color: var(--green-dark); font: 800 40px/1 'Segoe UI', Arial, sans-serif; letter-spacing: -.04em; }
 .weather-current span { color: #526650; font-size: 15px; font-weight: 700; }
 .weather-current p { margin: 0; color: var(--muted); font-size: 13px; }
 .weather-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 14px 0; }
@@ -210,7 +211,7 @@ main section[aria-label='Input listings'] article { margin: 0; }
 }
 .auth-intro > * { position: relative; z-index: 1; }
 .auth-eyebrow, .auth-step { color: #688348; font-size: 11px; font-weight: 800; letter-spacing: .13em; }
-.auth-intro h1 { max-width: 520px; margin: 18px 0; color: var(--green-dark); font: 800 clamp(40px, 6vw, 68px)/1.04 'Segoe UI', sans-serif; letter-spacing: -.055em; }
+.auth-intro h1 { max-width: 520px; margin: 18px 0; color: var(--green-dark); font: 800 clamp(40px, 6vw, 68px)/1.04 'Segoe UI', Arial, sans-serif; letter-spacing: -.055em; }
 .auth-intro > p { max-width: 440px; color: var(--muted); font-size: 17px; line-height: 1.7; }
 .auth-points { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 34px; }
 .auth-points span {
@@ -279,7 +280,7 @@ main section[aria-label='Input listings'] article { margin: 0; }
 .auth-switch .text-button:disabled { opacity: .55; cursor: wait; }
 .account-page { display: grid; place-items: center; }
 .account-card { width: min(100%, 540px); }
-.account-card h1 { color: var(--green-dark); font: 800 34px 'Segoe UI', sans-serif; }
+.account-card h1 { color: var(--green-dark); font: 800 34px 'Segoe UI', Arial, sans-serif; }
 .account-card p { color: var(--muted); }
 
 :root[data-theme='dark'] {
